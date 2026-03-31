@@ -481,7 +481,7 @@ def collect_results(
         # Skip non-metric keys; lm-eval uses suffixes like ",none" or ",remove_whitespace"
         def _first_numeric(d: dict, *candidates: str) -> tuple[float | None, str | None]:
             for c in candidates:
-                if c in d and isinstance(d[c], (int, float)):
+                if c in d and isinstance(d[c], int | float):
                     return float(d[c]), c
             return None, None
 
@@ -490,7 +490,7 @@ def collect_results(
         ) -> tuple[float | None, str | None]:
             for k, v in d.items():
                 if (k == prefix or k.startswith(prefix + ",")) and isinstance(
-                    v, (int, float)
+                    v, int | float
                 ):
                     return float(v), k
             return None, None
