@@ -367,9 +367,12 @@ def schedule_evals(
         time_limit=time_limit,  # Dynamic time limit
         limit=limit if limit else "",  # Sample limit for quick testing
         venv_path=venv_path or "",
-        lm_eval_include_path=lm_eval_include_path or str(files("oellm.resources") / "custom_lm_eval_tasks"),
+        lm_eval_include_path=lm_eval_include_path
+        or str(files("oellm.resources") / "custom_lm_eval_tasks"),
         hf_hub_offline=0 if local else 1,
-        lighteval_model_args="trust_remote_code=True,batch_size=1" if local else "trust_remote_code=True",
+        lighteval_model_args="trust_remote_code=True,batch_size=1"
+        if local
+        else "trust_remote_code=True",
     )
 
     # substitute any $ENV_VAR occurrences
