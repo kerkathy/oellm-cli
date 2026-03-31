@@ -67,6 +67,26 @@ oellm schedule-eval --models "model-name" --task_groups "belebele-eu-5-shot,glob
 oellm schedule-eval --models "model-name" --task_groups "oellm-multilingual"
 ```
 
+## Running Locally (without SLURM)
+
+The `--local` flag lets you run evaluations directly on your machine without a cluster or Singularity container. It generates the same eval script and executes it with bash, injecting fake SLURM environment variables so all tasks run sequentially in a single process. This is useful for testing that tasks and models are correctly configured before submitting to a cluster.
+
+```bash
+# 1. Add eval dependencies to the project venv
+uv pip install lm-eval torch transformers accelerate "datasets<4.0.0"
+
+# 2. Run evaluations locally — useful for smoke-testing with a small sample
+oellm schedule-eval \
+    --models "EleutherAI/pythia-160m" \
+    --tasks "gsm8k" \
+    --n_shot 0 \
+    --venv_path .venv \
+    --local true \
+    --limit 1
+```
+
+Results are written to `./oellm-output/<timestamp>/results/`.
+
 ## SLURM Overrides
 
 Override cluster defaults (partition, account, time limit, etc.) with `--slurm_template_var` (JSON object):
