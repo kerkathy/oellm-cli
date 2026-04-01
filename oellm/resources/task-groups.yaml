@@ -124,6 +124,56 @@ task_groups:
         subset: swe_Latn
       - task: belebele_nob_Latn
         subset: nob_Latn
+  belebele-eu-cf-0-shot:
+    description: "Belebele European language tasks (cloze formulation, lighteval)"
+    suite: lighteval
+    n_shots: [0]
+    dataset: facebook/belebele
+    tasks:
+      - task: belebele_bul_Cyrl_cf
+        subset: bul_Cyrl
+      - task: belebele_hrv_Latn_cf
+        subset: hrv_Latn
+      - task: belebele_ces_Latn_cf
+        subset: ces_Latn
+      - task: belebele_dan_Latn_cf
+        subset: dan_Latn
+      - task: belebele_nld_Latn_cf
+        subset: nld_Latn
+      - task: belebele_eng_Latn_cf
+        subset: eng_Latn
+      - task: belebele_est_Latn_cf
+        subset: est_Latn
+      - task: belebele_eus_Latn_cf
+        subset: eus_Latn
+      - task: belebele_fin_Latn_cf
+        subset: fin_Latn
+      - task: belebele_fra_Latn_cf
+        subset: fra_Latn
+      - task: belebele_deu_Latn_cf
+        subset: deu_Latn
+      - task: belebele_ell_Grek_cf
+        subset: ell_Grek
+      - task: belebele_hun_Latn_cf
+        subset: hun_Latn
+      - task: belebele_ita_Latn_cf
+        subset: ita_Latn
+
+      - task: belebele_pol_Latn_cf
+        subset: pol_Latn
+      - task: belebele_por_Latn_cf
+        subset: por_Latn
+      - task: belebele_ron_Latn_cf
+        subset: ron_Latn
+      - task: belebele_slk_Latn_cf
+        subset: slk_Latn
+
+      - task: belebele_spa_Latn_cf
+        subset: spa_Latn
+      - task: belebele_swe_Latn_cf
+        subset: swe_Latn
+      - task: belebele_nob_Latn_cf
+        subset: nob_Latn
   flores-200-eu-to-eng:
     description: "Flores 200 EU to English translation"
     suite: lighteval
