@@ -32,10 +32,24 @@ task_metrics:
   winogrande: acc
   arc_challenge: acc_norm
   arc_easy: acc_norm
+  arc_mt: acc_norm
   boolq: acc
   commonsense_qa: acc
   hellaswag: acc_norm
   piqa: acc_norm
+  global_piqa_prompted: acc
+  sib: acc
+  multiblimp: acc
+  opensubtitles_multi40_pair: acc
+  xcsqa_eng_mcf: acc_norm
+  # math:algebra: maj@4
+  # math:counting_and_probability: maj@4
+  # math:geometry: maj@4
+  # math:intermediate_algebra: maj@4
+  # math:number_theory: maj@4
+  # math:prealgebra: maj@4
+  # math:precalculus: maj@4
+  math: maj@4
   social_iqa: acc
   agieval_lsat_ar: acc
   wsc273: acc
@@ -84,6 +98,9 @@ task_groups:
         n_shots: [10]
         dataset: allenai/ai2_arc
         subset: ARC-Challenge
+      - task: arc_mt
+        n_shots: [10]
+        dataset: LumiOpen/arc_challenge_mt
       - task: commonsense_qa
         n_shots: [10]
         dataset: tau/commonsense_qa
@@ -311,16 +328,146 @@ task_groups:
     description: "EU Language GSM benchmarks in Aya Expanse"
     suite: lm-eval-harness
     n_shots: [5]
-    dataset: jbross-ibm-research/mgsm
     tasks:
+      # Keep Greek omitted due to non-commercial license constraints.
+      - task: mgsm_native_cot_bn
+        dataset: juletxara/mgsm
+        subset: bn
       - task: mgsm_native_cot_en
+        dataset: juletxara/mgsm
         subset: en
       - task: mgsm_native_cot_de
+        dataset: juletxara/mgsm
         subset: de
       - task: mgsm_native_cot_es
+        dataset: juletxara/mgsm
         subset: es
       - task: mgsm_native_cot_fr
+        dataset: juletxara/mgsm
         subset: fr
+      - task: mgsm_native_cot_ja
+        dataset: juletxara/mgsm
+        subset: ja
+      - task: mgsm_native_cot_ru
+        dataset: juletxara/mgsm
+        subset: ru
+      - task: mgsm_native_cot_sw
+        dataset: juletxara/mgsm
+        subset: sw
+      - task: mgsm_native_cot_te
+        dataset: juletxara/mgsm
+        subset: te
+      - task: mgsm_native_cot_th
+        dataset: juletxara/mgsm
+        subset: th
+      - task: mgsm_native_cot_zh
+        dataset: juletxara/mgsm
+        subset: zh
+
+  global-piqa:
+    description: "Global PIQA multiple-choice benchmark"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      # Disabled for short-context models in the current eval setup.
+      # In the 2026-04-28-14-58-23 run this task failed with:
+      # "requested max tokens to generate (2048) must be less than model's
+      # maximum sequence length (2048)".
+      # []
+      - task: global_piqa_prompted
+
+  sib-200:
+    description: "SIB-200 sentence topic classification"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      - task: sib
+
+  multiblimp:
+    description: "MultiBLiMP pairwise sentence ranking"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      - task: multiblimp
+
+  xcsqa:
+    description: "Cross-lingual CSQA in LightEval (MCF formulation)"
+    suite: lighteval
+    n_shots: [0]
+    tasks:
+      # Explicit dataset metadata lets `--download_only` warm the same cached
+      # configs that lighteval will request at runtime.
+      - task: xcsqa_eng_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-en
+      - task: xcsqa_deu_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-de
+      - task: xcsqa_spa_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-es
+      - task: xcsqa_fra_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-fr
+      - task: xcsqa_ita_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-it
+      - task: xcsqa_pol_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-pl
+      - task: xcsqa_por_mcf
+        dataset: INK-USC/xcsr
+        subset: X-CSQA-pt
+
+  open-subtitles-x-to-eng:
+    description: "OpenSubtitles translation (x to English), directional reporting group"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      # Use lm-eval OpenSubtitles dynamic pair task format (PR #3706).
+      # Keep mirrored groups to preserve directional report slots.
+      - task: opensubtitles_multi40_pair
+
+  open-subtitles-eng-to-x:
+    description: "OpenSubtitles translation (English to x), directional reporting group"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      - task: opensubtitles_multi40_pair
+
+  doclevel-mt-x-to-eng:
+    description: "Document-level MT proxy (x to English), directional reporting group"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      # TODO: Replace with dedicated doc-level MT tasks when available in lm-eval.
+      - task: wmt14-fr-en
+      - task: wmt16-de-en
+      - task: wmt16-ro-en
+
+  doclevel-mt-eng-to-x:
+    description: "Document-level MT proxy (English to x), directional reporting group"
+    suite: lm-eval-harness
+    n_shots: [0]
+    tasks:
+      # TODO: Replace with dedicated doc-level MT tasks when available in lm-eval.
+      - task: wmt14-en-fr
+      - task: wmt16-en-de
+      - task: wmt16-en-ro
+
+  polymath:
+    description: "MATH dataset subtasks"
+    suite: lighteval
+    n_shots: [0]
+    dataset: DigitalLearningGmbH/MATH-lighteval
+    tasks:
+      - task: math
+      # Disabled for short-context models in the current eval setup.
+      # `math` requests 2048 generation tokens, which fails on
+      # `EleutherAI/pythia-14m` with:
+      # "requested max tokens to generate (2048) must be less than model's
+      # maximum sequence length (2048)".
+      # []
 
   generic-multilingual:
     description: "Generic multilingual benchmarks in Aya Expanse"
@@ -391,6 +538,9 @@ task_groups:
       - task: include_base_44_ukrainian
         subset: Ukrainian
 
+  # NOTE: HellaSwag has translation variants with NC license constraints upstream.
+  # Keep using the canonical `hellaswag` task for unrestricted baseline reporting.
+
   dclm-core-22:
     description: "DCLM core 22 evaluation tasks (lm-eval-harness, matching LLM Foundry task types)"
     suite: lm-eval-harness
@@ -406,6 +556,9 @@ task_groups:
         n_shots: [10]
         dataset: allenai/ai2_arc
         subset: ARC-Challenge
+      - task: arc_mt
+        n_shots: [10]
+        dataset: LumiOpen/arc_challenge_mt
       - task: boolq
         n_shots: [10]
         dataset: aps/super_glue
@@ -499,12 +652,22 @@ task_groups:
 
 super_groups:
   oellm-multilingual:
-    description: "Combined Belebele EU set plus multilingual benchmarks"
+    description: "Combined multilingual benchmark suite"
     task_groups:
       - task: flores-200-eu-to-eng
       - task: flores-200-eng-to-eu
       - task: belebele-eu-5-shot
+      - task: belebele-eu-cf
       - task: global-mmlu-eu
       - task: mgsm-eu
+      - task: global-piqa
+      - task: sib-200
+      - task: multiblimp
+      - task: xcsqa
+      - task: polymath
+      - task: open-subtitles-x-to-eng
+      - task: open-subtitles-eng-to-x
+      - task: doclevel-mt-x-to-eng
+      - task: doclevel-mt-eng-to-x
       - task: generic-multilingual
       - task: include

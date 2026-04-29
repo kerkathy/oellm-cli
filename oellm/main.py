@@ -577,6 +577,12 @@ def collect_results(
             val, key = _first_matching_prefix(result_dict, metric.split(",")[0])
             if val is not None:
                 return val, key
+
+        # Add a check for majority voting patterns (e.g., maj@4, maj@8)
+        for k, v in result_dict.items():
+            if k.startswith("maj@") and isinstance(v, (int, float)):
+                return float(v), k
+            
         return None, None
 
     def _split_task_and_nshot(name: str) -> tuple[str, int | None]:
@@ -588,6 +594,31 @@ def collect_results(
             if after.isdigit():
                 return base, int(after)
         return name, None
+
+    def _aggregate_group_from_subtasks(
+        group_name: str,
+        group_subtasks: list[str],
+        all_results: dict,
+    ) -> tuple[float | None, str | None]:
+        """Fallback for lm-eval groups whose aggregate row has no metric payload."""
+        metric_values: list[float] = []
+        metric_name: str | None = None
+
+        for subtask_name in group_subtasks:
+            subtask_results = all_results.get(subtask_name)
+            if not isinstance(subtask_results, dict):
+                continue
+            value, resolved_metric = _resolve_metric(group_name, subtask_results)
+            if value is None:
+                continue
+            metric_values.append(value)
+            if metric_name is None:
+                metric_name = resolved_metric
+
+        if not metric_values:
+            return None, None
+
+        return float(sum(metric_values) / len(metric_values)), metric_name
 
     results_path = Path(results_dir)
     if not results_path.exists():
@@ -666,26 +697,35 @@ def collect_results(
             for _s in _subs:
                 group_subtask_names.add(_s)
 
-        # Prefer only the first aggregate metric from groups (simplified)
+        group_rows_added = 0
         if groups_map:
-            group_name, group_results = next(iter(groups_map.items()))
-            # Prefer original extraction from n_shot_data and subtasks, then
-            # global_n_shot; only fall back to parsing the group name.
-            orig_group_name = group_name
-            n_shot = n_shot_data.get(orig_group_name, "unknown")
-            if n_shot == "unknown":
-                for subtask_name in group_subtasks_map.get(orig_group_name, []):
-                    if subtask_name in n_shot_data:
-                        n_shot = n_shot_data[subtask_name]
-                        break
-            if n_shot == "unknown" and global_n_shot is not None:
-                n_shot = global_n_shot
-            # Fallback: parse possible '|N' suffix from group name
-            group_name, parsed_n = _split_task_and_nshot(orig_group_name)
-            if n_shot == "unknown" and parsed_n is not None:
-                n_shot = parsed_n
-            performance, metric_name = _resolve_metric(group_name, group_results)
-            if performance is not None:
+            for orig_group_name, group_results in groups_map.items():
+                # Prefer original extraction from n_shot_data and subtasks, then
+                # global_n_shot; only fall back to parsing the group name.
+                n_shot = n_shot_data.get(orig_group_name, "unknown")
+                if n_shot == "unknown":
+                    for subtask_name in group_subtasks_map.get(orig_group_name, []):
+                        if subtask_name in n_shot_data:
+                            n_shot = n_shot_data[subtask_name]
+                            break
+                if n_shot == "unknown" and global_n_shot is not None:
+                    n_shot = global_n_shot
+
+                group_name, parsed_n = _split_task_and_nshot(orig_group_name)
+                if n_shot == "unknown" and parsed_n is not None:
+                    n_shot = parsed_n
+
+                performance, metric_name = _resolve_metric(group_name, group_results)
+                if performance is None:
+                    performance, metric_name = _aggregate_group_from_subtasks(
+                        group_name,
+                        group_subtasks_map.get(orig_group_name, []),
+                        results,
+                    )
+
+                if performance is None:
+                    continue
+
                 if check:
                     completed_jobs.add((model_name, group_name, n_shot))
                 rows.append(
@@ -697,7 +737,10 @@ def collect_results(
                         "metric_name": metric_name if metric_name is not None else "",
                     }
                 )
-                # Skip per-task iteration when groups are present
+                group_rows_added += 1
+
+            if group_rows_added:
+                # Skip per-task iteration when group aggregates were extracted
                 continue
 
         for task_name, task_results in results.items():
