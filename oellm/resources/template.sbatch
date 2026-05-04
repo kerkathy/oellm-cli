@@ -1,4 +1,7 @@
 #!/bin/bash
+# SBATCH directives are ignored when this script is run directly with bash.
+set -euo pipefail
+
 #SBATCH --job-name=oellm-eval
 #SBATCH --time={time_limit}
 #SBATCH --gres=gpu:$GPUS_PER_NODE

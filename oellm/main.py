@@ -36,8 +36,9 @@ def _resolve_hf_hub_offline(local: bool) -> int:
     """Value embedded in the generated eval script as HF_HUB_OFFLINE.
 
     If ``HF_HUB_OFFLINE`` is set in the environment when ``oellm`` runs, that
-    value wins. Otherwise defaults to online Hub access for ``--local``
-    (typical laptop dev) and offline for SLURM jobs (air-gapped workers).
+    value wins. Otherwise generated eval scripts default to offline Hub access
+    because model and dataset checks/downloads have already happened before the
+    script runs.
     """
     raw = os.environ.get("HF_HUB_OFFLINE")
     if raw is not None and str(raw).strip() != "":
@@ -45,7 +46,7 @@ def _resolve_hf_hub_offline(local: bool) -> int:
             return int(str(raw).strip())
         except ValueError:
             logging.warning("Invalid HF_HUB_OFFLINE=%r; using default", raw)
-    return 0 if local else 1
+    return 1
 
 
 def _resolve_slurm_mem() -> str:
@@ -482,6 +483,7 @@ def schedule_evals(
             logging.info("Local evaluation completed.")
         except subprocess.CalledProcessError as e:
             logging.error(f"Evaluation failed with exit code {e.returncode}")
+            raise
         return
 
     try:
