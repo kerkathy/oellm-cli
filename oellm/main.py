@@ -664,6 +664,7 @@ def collect_results(
             or data.get("config_general", {}).get("model_name")
             or data.get("config_general", {}).get("model")
             or data.get("config_general", {}).get("model_path")
+            or data.get("config_general", {}).get("model_config", {}).get("model_name")
             or data.get("summary_general", {}).get("model")
             or data.get("model")
             or "unknown"
@@ -755,6 +756,11 @@ def collect_results(
             if task_name.startswith("mmlu_") and task_name != "mmlu":
                 continue
 
+            # lighteval writes a synthetic aggregate named "all" next to the
+            # concrete task; keep the concrete task rows for oellm job checks.
+            if task_name == "all":
+                continue
+
             # Skip Global MMLU subtasks - keep only aggregates like global_mmlu_full_pt
             if task_name.startswith("global_mmlu_") and task_name.count("_") >= 4:
                 continue
@@ -763,9 +769,15 @@ def collect_results(
             # Prefer original extraction from `n_shot_data` and `global_n_shot`,
             # and fall back to parsing a '|N' suffix in the task name.
             task_name_clean, parsed_n = _split_task_and_nshot(task_name)
-            n_shot = (
-                n_shot_data.get(task_name_clean) or global_n_shot or parsed_n or "unknown"
-            )
+            n_shot = n_shot_data.get(task_name_clean)
+            if n_shot is None:
+                n_shot = n_shot_data.get(task_name)
+            if n_shot is None:
+                n_shot = global_n_shot
+            if n_shot is None:
+                n_shot = parsed_n
+            if n_shot is None:
+                n_shot = "unknown"
 
             # If this is a group aggregate and n_shot is missing, derive from any subtask
             if task_name_clean in group_aggregate_names and n_shot == "unknown":

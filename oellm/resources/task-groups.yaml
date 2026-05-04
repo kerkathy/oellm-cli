@@ -61,6 +61,55 @@ task_metrics:
   bigbench_operators_generate_until: exact_match
   bigbench_repeat_copy_logic_generate_until: exact_match
   bigbench_cs_algorithms_generate_until: exact_match
+  global_mgsm_am: exact_match
+  global_mgsm_ar: exact_match
+  global_mgsm_bn: exact_match
+  global_mgsm_ca: exact_match
+  global_mgsm_cs: exact_match
+  global_mgsm_cy: exact_match
+  global_mgsm_de: exact_match
+  global_mgsm_el: exact_match
+  global_mgsm_en: exact_match
+  global_mgsm_es: exact_match
+  global_mgsm_eu: exact_match
+  global_mgsm_fr: exact_match
+  global_mgsm_gl: exact_match
+  global_mgsm_gu: exact_match
+  global_mgsm_ha: exact_match
+  global_mgsm_hu: exact_match
+  global_mgsm_ja: exact_match
+  global_mgsm_km: exact_match
+  global_mgsm_kn: exact_match
+  global_mgsm_ko: exact_match
+  global_mgsm_ky: exact_match
+  global_mgsm_lg: exact_match
+  global_mgsm_my: exact_match
+  global_mgsm_ne: exact_match
+  global_mgsm_ru: exact_match
+  global_mgsm_si: exact_match
+  global_mgsm_sn: exact_match
+  global_mgsm_sr: exact_match
+  global_mgsm_st: exact_match
+  global_mgsm_sw: exact_match
+  global_mgsm_ta: exact_match
+  global_mgsm_te: exact_match
+  global_mgsm_th: exact_match
+  global_mgsm_ur: exact_match
+  global_mgsm_uz: exact_match
+  global_mgsm_vi: exact_match
+  global_mgsm_wo: exact_match
+  global_mgsm_xh: exact_match
+  global_mgsm_yo: exact_match
+  global_mgsm_zh: exact_match
+  global_mgsm_zu: exact_match
+  polymath_en_low: exact_match
+  polymath_de_low: exact_match
+  polymath_es_low: exact_match
+  polymath_fr_low: exact_match
+  global_piqa_completions_eng_latn: acc_norm
+  global_piqa_completions_deu_latn: acc_norm
+  global_piqa_completions_spa_latn_spai: acc_norm
+  global_piqa_completions_fra_latn_fran: acc_norm
 
 task_groups:
   open-sci-0.01:
@@ -223,7 +272,7 @@ task_groups:
         subset: eus_Latn
       - task: belebele_cat_Latn_cf
         subset: cat_Latn
-      
+
   flores-200-eu-to-eng:
     description: "Flores 200 EU to English translation"
     suite: lighteval
@@ -468,6 +517,140 @@ task_groups:
       # "requested max tokens to generate (2048) must be less than model's
       # maximum sequence length (2048)".
       # []
+
+  xcsqa:
+    description: "XCSQA commonsense reasoning set"
+    suite: lighteval
+    n_shots: [0]
+    dataset: INK-USC/xcsr
+    tasks:
+      - task: xcsqa_eng_mcf
+        subset: X-CSQA-en
+      - task: xcsqa_deu_mcf
+        subset: X-CSQA-de
+      - task: xcsqa_spa_mcf
+        subset: X-CSQA-es
+      - task: xcsqa_fra_mcf
+        subset: X-CSQA-fr
+
+  global-mgsm:
+    description: "Global-MGSM multilingual math benchmarks"
+    suite: lm-eval-harness
+    n_shots: [0]
+    dataset: CohereLabs/global-mgsm
+    tasks:
+      - task: global_mgsm_bn
+        subset: bn
+      - task: global_mgsm_de
+        subset: de
+      - task: global_mgsm_en
+        subset: en
+      - task: global_mgsm_es
+        subset: es
+      - task: global_mgsm_fr
+        subset: fr
+      - task: global_mgsm_ja
+        subset: ja
+      - task: global_mgsm_ru
+        subset: ru
+      - task: global_mgsm_sw
+        subset: sw
+      - task: global_mgsm_te
+        subset: te
+      - task: global_mgsm_th
+        subset: th
+      - task: global_mgsm_zh
+        subset: zh
+      - task: global_mgsm_ar
+        subset: ar
+      - task: global_mgsm_ca
+        subset: ca
+      - task: global_mgsm_cs
+        subset: cs
+      - task: global_mgsm_cy
+        subset: cy
+      - task: global_mgsm_el
+        subset: el
+      - task: global_mgsm_eu
+        subset: eu
+      - task: global_mgsm_gl
+        subset: gl
+      - task: global_mgsm_hu
+        subset: hu
+      - task: global_mgsm_ko
+        subset: ko
+      - task: global_mgsm_sr
+        subset: sr
+      - task: global_mgsm_vi
+        subset: vi
+      - task: global_mgsm_am
+        subset: am
+      - task: global_mgsm_ha
+        subset: ha
+      - task: global_mgsm_lg
+        subset: lg
+      - task: global_mgsm_sn
+        subset: sn
+      - task: global_mgsm_st
+        subset: st
+      - task: global_mgsm_wo
+        subset: wo
+      - task: global_mgsm_xh
+        subset: xh
+      - task: global_mgsm_yo
+        subset: yo
+      - task: global_mgsm_zu
+        subset: zu
+      - task: global_mgsm_ur
+        subset: ur
+      - task: global_mgsm_gu
+        subset: gu
+      - task: global_mgsm_km
+        subset: km
+      - task: global_mgsm_kn
+        subset: kn
+      - task: global_mgsm_ky
+        subset: ky
+      - task: global_mgsm_my
+        subset: my
+      - task: global_mgsm_ne
+        subset: ne
+      - task: global_mgsm_si
+        subset: si
+      - task: global_mgsm_ta
+        subset: ta
+      - task: global_mgsm_uz
+        subset: uz
+
+  polymath:
+    description: "PolyMath multilingual math set (low difficulty)"
+    suite: lm-eval-harness
+    n_shots: [0]
+    dataset: Qwen/PolyMath
+    tasks:
+      - task: polymath_en_low
+        subset: en
+      - task: polymath_de_low
+        subset: de
+      - task: polymath_es_low
+        subset: es
+      - task: polymath_fr_low
+        subset: fr
+
+  global-piqa:
+    description: "Global PIQA commonsense reasoning set"
+    suite: lm-eval-harness
+    n_shots: [0]
+    dataset: mrlbenchmarks/global-piqa-nonparallel
+    tasks:
+      - task: global_piqa_completions_eng_latn
+        subset: eng_latn
+      - task: global_piqa_completions_deu_latn
+        subset: deu_latn
+      - task: global_piqa_completions_spa_latn_spai
+        subset: spa_latn_spai
+      - task: global_piqa_completions_fra_latn_fran
+        subset: fra_latn_fran
 
   generic-multilingual:
     description: "Generic multilingual benchmarks in Aya Expanse"
