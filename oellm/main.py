@@ -438,6 +438,7 @@ def schedule_evals(
         hf_hub_offline=_resolve_hf_hub_offline(local),
         additional_model_args=_resolve_additional_model_args(local),  # Batch size
         evalchemy_dir=os.environ.get("EVALCHEMY_DIR", "/opt/evalchemy"),
+        oellm_repo_root=str(Path(__file__).resolve().parents[1]),
     )
 
     # substitute any $ENV_VAR occurrences
