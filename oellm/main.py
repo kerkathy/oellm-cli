@@ -150,7 +150,7 @@ def schedule_evals(
         max_array_len: The maximum number of jobs to schedule to run concurrently.
             Warning: this is not the number of jobs in the array job. This is determined by the environment variable `QUEUE_LIMIT`.
         limit: If set, limit the number of samples per task (useful for quick testing).
-            Passes --limit to lm_eval and --max_samples to lighteval.
+            Passes --limit to lm_eval and Inspect, and --max_samples to lighteval.
         download_only: If True, only download the datasets and models and exit.
         dry_run: If True, generate the SLURM script but don't submit it to the scheduler.
         skip_checks: If True, skip container image, model validation, and dataset pre-download checks for faster execution.
@@ -507,6 +507,7 @@ def schedule_evals(
             logging.info("Local evaluation completed.")
         except subprocess.CalledProcessError as e:
             logging.error(f"Evaluation failed with exit code {e.returncode}")
+            raise
         return
 
     try:
@@ -538,6 +539,33 @@ def schedule_evals(
         )
 
 
+def _read_inspect_eval_header(eval_file: Path) -> dict:
+    """Read an Inspect log header through Inspect's supported CLI."""
+    try:
+        result = subprocess.run(
+            ["inspect", "log", "dump", "--header-only", str(eval_file)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            "Inspect .eval logs were found, but the 'inspect' command is not "
+            "available. Activate the Inspect environment or add its bin directory "
+            "to PATH before collecting results."
+        ) from e
+    except subprocess.CalledProcessError as e:
+        detail = e.stderr.strip() if e.stderr else str(e)
+        raise RuntimeError(f"Failed to read Inspect log {eval_file}: {detail}") from e
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"Inspect returned invalid JSON while reading {eval_file}"
+        ) from e
+
+
 def collect_results(
     results_dir: str,
     output_csv: str = "eval_results.csv",
@@ -546,12 +574,12 @@ def collect_results(
     verbose: bool = False,
 ) -> None:
     """
-    Collect evaluation results from JSON files and export to CSV.
+    Collect evaluation results from JSON and Inspect .eval files and export to CSV.
 
     Recursively searches ``results_dir`` for every sub-directory that contains
     a ``jobs.csv`` file, merges all those CSV files into one (later directories
-    override duplicate rows), then recursively finds every ``.json`` result
-    file under ``results_dir``.
+    override duplicate rows), then recursively finds every ``.json`` and
+    Inspect ``.eval`` result file under ``results_dir``.
 
     With ``--check`` the merged jobs are compared against the extracted results
     and any missing evaluations are written to a ``*_missing.csv`` file.
@@ -559,7 +587,7 @@ def collect_results(
     ``output_csv``.
 
     Args:
-        results_dir: Root directory to search for jobs.csv files and JSON results
+        results_dir: Root directory to search for jobs.csv and result files
         output_csv: Output CSV filename (default: eval_results.csv)
         check: Check for missing evaluations and create a missing jobs CSV
         verbose: Enable verbose logging
@@ -665,20 +693,67 @@ def collect_results(
             check = False
 
     # ------------------------------------------------------------------
-    # 2. Recursively find all JSON result files.
+    # 2. Recursively find JSON and native Inspect result files.
     # ------------------------------------------------------------------
     json_files = sorted(results_path.rglob("*.json"))
+    inspect_files = sorted(results_path.rglob("*.eval"))
 
-    if not json_files:
-        logging.warning(f"No JSON files found under {results_dir}")
+    if not json_files and not inspect_files:
+        logging.warning(f"No result files found under {results_dir}")
         if not check:
             return
 
-    logging.info(f"Found {len(json_files)} result file(s)")
+    logging.info(
+        f"Found {len(json_files)} JSON and {len(inspect_files)} Inspect result file(s)"
+    )
 
     # Collect results
     rows = []
     completed_jobs = set()  # Track (model, task, n_shot) tuples
+
+    for inspect_file in inspect_files:
+        data = _read_inspect_eval_header(inspect_file)
+        if data.get("status") != "success":
+            logging.warning(f"Ignoring non-successful Inspect log: {inspect_file}")
+            continue
+
+        eval_spec = data.get("eval", {})
+        model_name = str(eval_spec.get("model", "unknown"))
+        model_args = eval_spec.get("model_args", {}) or {}
+        if model_name == "hf/local" and model_args.get("model_path"):
+            model_name = str(model_args["model_path"])
+        elif model_name.startswith("hf/"):
+            model_name = model_name.removeprefix("hf/")
+
+        task_name = str(eval_spec.get("task", "unknown"))
+
+        if check:
+            completed_jobs.add((model_name, task_name, 0))
+
+        metric_values: dict[str, float] = {}
+        for score in (data.get("results", {}) or {}).get("scores", []):
+            for metric_name, metric in (score.get("metrics", {}) or {}).items():
+                value = metric.get("value") if isinstance(metric, dict) else None
+                if isinstance(value, int | float):
+                    metric_values[metric_name] = float(value)
+
+        performance, metric_name = _resolve_metric(task_name, metric_values)
+        if performance is None:
+            for candidate, value in metric_values.items():
+                if "stderr" not in candidate.lower():
+                    performance, metric_name = value, candidate
+                    break
+
+        if performance is not None:
+            rows.append(
+                {
+                    "model_name": model_name,
+                    "task": task_name,
+                    "n_shot": 0,
+                    "performance": performance,
+                    "metric_name": metric_name or "",
+                }
+            )
 
     for json_file in json_files:
         with open(json_file) as f:

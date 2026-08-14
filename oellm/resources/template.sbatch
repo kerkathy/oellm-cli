@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #SBATCH --job-name=oellm-eval
 #SBATCH --time={time_limit}
 #SBATCH --gres=gpu:$GPUS_PER_NODE
@@ -214,8 +215,26 @@ do
                 exit 1
             fi
             ;;
+        inspect)
+            RESULTS_SUBDIR="{evals_dir}/$(openssl rand -hex 5)"
+            mkdir -p "$RESULTS_SUBDIR"
+
+            if [ -e "$model_path" ]; then
+                run_python -m inspect_ai eval "$task_path" \
+                    --model hf/local \
+                    -M "model_path=$model_path" \
+                    --log-dir "$RESULTS_SUBDIR" \
+                    ${{LIMIT:+--limit $LIMIT}}
+            else
+                run_python -m inspect_ai eval "$task_path" \
+                    --model "hf/$model_path" \
+                    --log-dir "$RESULTS_SUBDIR" \
+                    ${{LIMIT:+--limit $LIMIT}}
+            fi
+            ;;
         *)
-            echo "[warning] Unknown evaluation suite '$eval_suite'. Skipping."
+            echo "[error] Unknown evaluation suite '$eval_suite'."
+            exit 1
             ;;
     esac
 

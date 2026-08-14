@@ -52,6 +52,7 @@ Available task groups:
 - `mgsm-eu` - Multilingual GSM benchmarks
 - `polymath-eu-low` / `polymath-eu-medium` / `polymath-eu-high` / `polymath-eu-top` - PolyMath multilingual math reasoning (EU languages, 0-shot, `\boxed{}` answer extraction), one group per difficulty tier
 - `generic-multilingual` - XWinograd, XCOPA, XStoryCloze
+- `safety` - Safety-related evaluations, currently BBQ through Inspect AI (zero-shot)
 - `include` - INCLUDE benchmarks
 
 Super groups combine multiple task groups:
@@ -120,6 +121,56 @@ Notes:
   group, it keeps the matches and warns about the rest. Some languages simply
   lack certain benchmarks (e.g. Italian/Portuguese have no MGSM), so a super
   group bracket transparently omits the missing ones.
+
+## Inspect AI and BBQ
+
+Inspect runs in its own environment because its dependency versions differ from
+lm-eval and lighteval:
+
+```bash
+uv venv --python 3.12 inspect-venv
+uv pip install --python inspect-venv/bin/python -r requirements-venv-inspect.txt
+```
+
+Schedule BBQ on a configured cluster:
+
+```bash
+oellm-eval schedule \
+  --models HuggingFaceTB/SmolLM2-135M-Instruct \
+  --task_groups safety \
+  --venv_path /path/to/inspect-venv
+```
+
+For a 10-sample local smoke test:
+
+```bash
+oellm-eval schedule \
+  --models HuggingFaceTB/SmolLM2-135M-Instruct \
+  --task_groups safety \
+  --venv_path /path/to/inspect-venv \
+  --local true \
+  --limit 10
+```
+
+Inspect writes native `.eval` logs below
+`./oellm-output/<timestamp>/results/<run-id>/`. View them with:
+
+```bash
+/path/to/inspect-venv/bin/inspect view \
+  --log-dir ./oellm-output/<timestamp>/results
+```
+
+When collecting a directory containing `.eval` files, put the Inspect
+environment on `PATH` so `oellm-eval collect` can use Inspect's supported
+log reader:
+
+```bash
+PATH=/path/to/inspect-venv/bin:$PATH \
+  oellm-eval collect --results_dir ./oellm-output
+```
+
+The backend accepts arbitrary Inspect task identifiers through CSV scheduling;
+BBQ is the first task registered in the `safety` group.
 
 ## Running Locally (without SLURM)
 
@@ -201,7 +252,7 @@ If you use custom tasks via `--tasks` that are not in the task groups registry, 
 
 ## Collecting Results
 
-After evaluations complete, collect results into a CSV.  `collect-results` **recursively** searches the given directory for every `jobs.csv` file and every `.json` result file, so you can point it at a top-level output folder that contains many sub-runs:
+After evaluations complete, collect results into a CSV.  `collect-results` **recursively** searches the given directory for every `jobs.csv` file and every `.json` or Inspect `.eval` result file, so you can point it at a top-level output folder that contains many sub-runs:
 
 ```
 output/

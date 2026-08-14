@@ -74,6 +74,29 @@ oellm-eval schedule \
     --skip_checks true
 ```
 
+## Inspect AI
+
+Inspect must use a dedicated environment so its `datasets` dependency remains
+isolated from lm-eval and lighteval:
+
+```bash
+uv venv --python 3.12 inspect-venv
+uv pip install --python inspect-venv/bin/python -r requirements-venv-inspect.txt
+```
+
+Run BBQ from the registered safety task group with:
+
+```bash
+oellm-eval schedule \
+    --models HuggingFaceTB/SmolLM2-135M-Instruct \
+    --task_groups safety \
+    --venv_path inspect-venv
+```
+
+Inspect tasks write native `.eval` logs. Use
+`inspect-venv/bin/inspect view --log-dir <run>/results` to inspect them.
+The environment intentionally contains no BOLD-specific packages.
+
 ## Evalchemy (reasoning)
 
 The `reasoning` task group includes 10 benchmarks: GSM8k, IFEval, and MBPP run via lm-eval-harness, while GPQADiamond, MATH500, LiveCodeBench, HumanEval, AIME24, AIME25, and AMC23 run via evalchemy.

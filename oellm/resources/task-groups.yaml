@@ -1,4 +1,5 @@
 task_metrics:
+  bbq: accuracy
   mmlu: acc
   mmlu_prox_cs: exact_match
   mmlu_prox_de: exact_match
@@ -780,6 +781,14 @@ task_groups:
       - task: AMC23
         n_shots: [0]
         suite: evalchemy
+
+  safety:
+    description: "BBQ bias benchmark for question answering (0-shot, accuracy)."
+    suite: inspect
+    n_shots: [0]
+    dataset: heegyu/bbq
+    tasks:
+      - task: bbq
 
   global-piqa-eu-completions:
     description: "Global PIQA European languages — multiple-choice completions (0-shot, mrlbenchmarks/global-piqa-nonparallel)"
